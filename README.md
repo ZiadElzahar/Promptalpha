@@ -13,9 +13,8 @@ This application adapts the uploaded notebook's scoring and compression implemen
 - Token counts: the same scoring tokenizer with `add_special_tokens=False`
 - Compression: every word with importance score `>= 0.25` is retained; original whitespace is formatted after extraction
 - Score threshold used by the app: fixed at `0.25`
-- Minimum output-token safeguard: `32` tokens when the prompt contains enough words
 
-The application uses an absolute score threshold, not a retention percentage. A word scored `0.25` or higher must not be removed. To avoid making very short prompts unusably small, the app may add lower-scoring words until the compressed result reaches 32 tokenizer tokens when possible. The scoring model itself remains unchanged.
+The application uses an absolute score threshold, not a retention percentage. A word scored `0.25` or higher is retained, and no minimum output-token rule adds lower-scoring words. The scoring model itself remains unchanged.
 
 ## Installation
 

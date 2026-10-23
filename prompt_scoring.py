@@ -13,7 +13,6 @@ SCORING_MODEL_ID = "microsoft/llmlingua-2-bert-base-multilingual-cased-meetingba
 MAX_CONTENT_TOKENS_PER_CHUNK = 510
 CHUNK_END_TOKENS = (".", "\n", ";")
 WORD_COMBINE = "max"
-MIN_OUTPUT_TOKENS = 32
 # Keep inline-code spans intact. This prevents names such as
 # ``finnnaaal (1).ipynb`` or ``get_user(id=42)`` from being split during cleaning.
 WORD_RE = re.compile(r"`[^`\n]*`|\w+|[^\w\s]+")
@@ -167,17 +166,11 @@ def score_prompt(text: str, bundle: ModelBundle) -> dict:
     return {"words": words, "scores": scores, "status": status, "truncated": truncated, "n_chunks": len(ranges), "n_model_tokens": n_model_tokens}
 
 
-def select_kept_indices(entries, score_threshold: float, minimum_tokens: int = 0, text: str = "", tokenizer=None):
+def select_kept_indices(entries, score_threshold: float):
     ranked = sorted(entries, key=lambda entry: (-float(entry["importance_score"]), entry["word_index"]))
     selected = [entry for entry in ranked if float(entry["importance_score"]) >= score_threshold]
     if not selected and ranked:
         selected = ranked[:1]
-    if minimum_tokens > 0 and tokenizer is not None and text:
-        while len(selected) < len(ranked):
-            candidate_text = _render_selected_words(text, selected)
-            if _count_tokens(tokenizer, candidate_text) >= minimum_tokens:
-                break
-            selected.append(ranked[len(selected)])
     return {entry["word_index"] for entry in selected}
 
 
@@ -198,13 +191,13 @@ def _render_selected_words(text: str, entries) -> str:
     return rendered.strip()
 
 
-def compress_prompt(text: str, result: dict, score_threshold: float, tokenizer=None, minimum_tokens: int = 0) -> str:
+def compress_prompt(text: str, result: dict, score_threshold: float) -> str:
     """Keep every scored word at or above the absolute importance threshold."""
     entries = [
         {"word_index": i, "word": word, "start_char": start, "end_char": end, "importance_score": score}
         for i, ((word, start, end), score) in enumerate(zip(result["words"], result["scores"]))
     ]
-    kept = select_kept_indices(entries, score_threshold, minimum_tokens, text, tokenizer)
+    kept = select_kept_indices(entries, score_threshold)
     return _render_selected_words(text, [entry for entry in entries if entry["word_index"] in kept])
 
 

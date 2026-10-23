@@ -3,7 +3,6 @@ from __future__ import annotations
 import streamlit as st
 
 from prompt_scoring import (
-    MIN_OUTPUT_TOKENS,
     compress_prompt,
     load_model,
     score_prompt,
@@ -64,8 +63,6 @@ if st.button("Clean Prompt", type="primary", use_container_width=True):
                     prompt,
                     result,
                     SCORE_THRESHOLD,
-                    tokenizer=bundle.tokenizer,
-                    minimum_tokens=MIN_OUTPUT_TOKENS,
                 )
                 original_tokens = token_count(bundle, prompt)
                 cleaned_tokens = token_count(bundle, cleaned)
