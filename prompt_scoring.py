@@ -14,7 +14,9 @@ MAX_CONTENT_TOKENS_PER_CHUNK = 510
 CHUNK_END_TOKENS = (".", "\n", ";")
 WORD_COMBINE = "max"
 MIN_OUTPUT_TOKENS = 32
-WORD_RE = re.compile(r"\w+|[^\w\s]+")
+# Keep inline-code spans intact. This prevents names such as
+# ``finnnaaal (1).ipynb`` or ``get_user(id=42)`` from being split during cleaning.
+WORD_RE = re.compile(r"`[^`\n]*`|\w+|[^\w\s]+")
 
 
 @dataclass

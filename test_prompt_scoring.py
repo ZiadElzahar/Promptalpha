@@ -5,7 +5,7 @@ def test_split_words_roundtrip():
     text = "Fix bug: `get_user(id=42)` must NOT return None."
     words = split_words(text)
     assert all(text[start:end] == word for word, start, end in words)
-    assert any(word == "get_user" for word, _, _ in words)
+    assert any(word == "`get_user(id=42)`" for word, _, _ in words)
 
 
 def test_compress_preserves_whitespace():
