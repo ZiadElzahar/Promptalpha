@@ -15,7 +15,17 @@ CHUNK_END_TOKENS = (".", "\n", ";")
 WORD_COMBINE = "max"
 # Keep inline-code spans intact. This prevents names such as
 # ``finnnaaal (1).ipynb`` or ``get_user(id=42)`` from being split during cleaning.
-WORD_RE = re.compile(r"`[^`\n]*`|\w+|[^\w\s]+")
+WORD_RE = re.compile(r"`[^`\n]*`|\w+(?:['’]\w+)?|[^\w\s]+")
+
+# These words carry negation, exclusivity, or hard requirements. They are
+# protected independently of the model score because deleting them can invert
+# the requested behavior.
+PROTECTED_TERMS = frozenset({
+    "not", "no", "never", "none", "neither", "nor", "except", "unless",
+    "only", "must", "required", "without", "avoid", "cannot", "can't",
+    "don't", "doesn't", "didn't", "isn't", "aren't", "wasn't", "weren't",
+    "shouldn't", "wouldn't", "couldn't", "won't", "shan't",
+})
 
 
 @dataclass
@@ -168,7 +178,11 @@ def score_prompt(text: str, bundle: ModelBundle) -> dict:
 
 def select_kept_indices(entries, score_threshold: float):
     ranked = sorted(entries, key=lambda entry: (-float(entry["importance_score"]), entry["word_index"]))
-    selected = [entry for entry in ranked if float(entry["importance_score"]) >= score_threshold]
+    selected = [
+        entry for entry in ranked
+        if float(entry["importance_score"]) >= score_threshold
+        or entry["word"].strip("` ").lower() in PROTECTED_TERMS
+    ]
     if not selected and ranked:
         selected = ranked[:1]
     return {entry["word_index"] for entry in selected}
