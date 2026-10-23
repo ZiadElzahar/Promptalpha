@@ -18,3 +18,11 @@ def test_protected_negation_survives():
     result = {"words": split_words(text), "scores": [0.1, 0.1, 0.1, 0.9]}
     assert "must" in compress_prompt(text, result, 0.25)
     assert "not" in compress_prompt(text, result, 0.25)
+
+
+def test_negation_auxiliary_survives_with_not():
+    text = "Do not delete this. You should not rewrite it."
+    result = {"words": split_words(text), "scores": [0.1] * len(split_words(text))}
+    cleaned = compress_prompt(text, result, 0.25)
+    assert "Do not" in cleaned
+    assert "should not" in cleaned

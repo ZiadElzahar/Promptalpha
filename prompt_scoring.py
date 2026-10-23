@@ -26,6 +26,11 @@ PROTECTED_TERMS = frozenset({
     "don't", "doesn't", "didn't", "isn't", "aren't", "wasn't", "weren't",
     "shouldn't", "wouldn't", "couldn't", "won't", "shan't",
 })
+NEGATION_AUXILIARIES = frozenset({
+    "do", "does", "did", "should", "would", "could", "will", "can",
+    "is", "are", "was", "were", "have", "has", "had",
+})
+NEGATION_WORDS = frozenset({"not", "never"})
 
 
 @dataclass
@@ -178,10 +183,22 @@ def score_prompt(text: str, bundle: ModelBundle) -> dict:
 
 def select_kept_indices(entries, score_threshold: float):
     ranked = sorted(entries, key=lambda entry: (-float(entry["importance_score"]), entry["word_index"]))
+    protected_indices = {
+        entry["word_index"]
+        for entry in entries
+        if entry["word"].strip("` ").lower() in PROTECTED_TERMS
+    }
+    # Protect both sides of explicit negation phrases: "Do not", "should not",
+    # "does not", etc. Protecting only "not" would change the remaining phrase.
+    for index, entry in enumerate(entries[:-1]):
+        current = entry["word"].strip("` ").lower()
+        following = entries[index + 1]["word"].strip("` ").lower()
+        if current in NEGATION_AUXILIARIES and following in NEGATION_WORDS:
+            protected_indices.update((entry["word_index"], entries[index + 1]["word_index"]))
     selected = [
         entry for entry in ranked
         if float(entry["importance_score"]) >= score_threshold
-        or entry["word"].strip("` ").lower() in PROTECTED_TERMS
+        or entry["word_index"] in protected_indices
     ]
     if not selected and ranked:
         selected = ranked[:1]
