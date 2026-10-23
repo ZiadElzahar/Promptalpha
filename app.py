@@ -43,11 +43,20 @@ def get_model():
 
 def send_report(subject: str, description: str) -> None:
     """Send a report from the configured alternate mailbox to the main mailbox."""
-    smtp_host = os.environ.get("REPORT_SMTP_HOST")
-    smtp_port = int(os.environ.get("REPORT_SMTP_PORT", "587"))
-    smtp_user = os.environ.get("REPORT_SMTP_USER")
-    smtp_password = os.environ.get("REPORT_SMTP_PASSWORD")
-    report_to = os.environ.get("REPORT_TO_EMAIL")
+    def setting(name: str, default: str = "") -> str:
+        value = os.environ.get(name)
+        if value:
+            return value
+        try:
+            return str(st.secrets.get(name, default))
+        except Exception:
+            return default
+
+    smtp_host = setting("REPORT_SMTP_HOST")
+    smtp_port = int(setting("REPORT_SMTP_PORT", "587"))
+    smtp_user = setting("REPORT_SMTP_USER")
+    smtp_password = setting("REPORT_SMTP_PASSWORD")
+    report_to = setting("REPORT_TO_EMAIL")
     if not all((smtp_host, smtp_user, smtp_password, report_to)):
         raise RuntimeError("Report email is not configured.")
 
