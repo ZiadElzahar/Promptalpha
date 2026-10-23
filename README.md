@@ -12,9 +12,9 @@ This application adapts the uploaded notebook's scoring and compression implemen
 - Keep score: `softmax(logits)[:, KEEP_LABEL_ID]`, with the notebook's keep-label resolution
 - Token counts: the same scoring tokenizer with `add_special_tokens=False`
 - Compression: top-scoring words are retained; original whitespace is preserved and dropped word characters are removed
-- Retention ratio used by the app: fixed at `30%`
+- Retention ratio used by the app: fixed at `25%`
 
-The user interface uses a fixed 30% retention ratio as requested. The internal scoring implementation remains unchanged.
+The user interface uses a fixed 25% retention ratio as requested. The internal scoring implementation remains unchanged.
 
 ## Installation
 
