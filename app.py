@@ -16,7 +16,7 @@ from prompt_scoring import (
     token_count,
 )
 
-st.set_page_config(page_title="Prompt Cleaner", page_icon=None, layout="wide")
+st.set_page_config(page_title="Promptalpha", page_icon=None, layout="wide")
 st.markdown(
     """
     <style>
@@ -62,7 +62,7 @@ def send_report(subject: str, description: str) -> None:
         smtp.send_message(message)
 
 
-st.title("Prompt Cleaner")
+st.title("Promptalpha")
 st.caption("Notebook-faithful LLMLingua-2 word-importance scoring and extractive compression")
 st.info(
     "This app reuses the notebook's exact scoring model and workflow. "

@@ -1,4 +1,4 @@
-# Streamlit Prompt Cleaner
+# Promptalpha
 
 This application adapts the uploaded notebook's scoring and compression implementation into a Streamlit UI. It uses the same official LLMLingua-2 token-classification checkpoint, word alignment, chunking policy, `max` word/subtoken score combination, extractive compression logic, and tokenizer-based token counting.
 
