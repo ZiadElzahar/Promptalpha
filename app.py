@@ -13,7 +13,7 @@ from prompt_scoring import (
     token_count,
 )
 
-KEEP_RATIO = 0.40
+KEEP_RATIO = 0.30
 
 st.set_page_config(page_title="Promptalpha", page_icon=None, layout="wide")
 st.markdown(
@@ -72,7 +72,7 @@ def send_report(subject: str, description: str) -> None:
 
 st.title("Promptalpha")
 st.caption("Extractive prompt compression")
-st.caption("The cleaner keeps the highest-scoring 40% of words and preserves the original whitespace.")
+st.caption("The cleaner keeps the highest-scoring 30% of words and preserves the original whitespace.")
 
 prompt = st.text_area(
     "Original prompt",
