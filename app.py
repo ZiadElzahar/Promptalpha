@@ -7,14 +7,13 @@ from email.message import EmailMessage
 import streamlit as st
 
 from prompt_scoring import (
-    MAX_CONTENT_TOKENS_PER_CHUNK,
-    SCORING_MODEL_ID,
-    WORD_COMBINE,
     compress_prompt,
     load_model,
     score_prompt,
     token_count,
 )
+
+KEEP_RATIO = 0.40
 
 st.set_page_config(page_title="Promptalpha", page_icon=None, layout="wide")
 st.markdown(
@@ -72,23 +71,8 @@ def send_report(subject: str, description: str) -> None:
 
 
 st.title("Promptalpha")
-st.caption("Notebook-faithful LLMLingua-2 word-importance scoring and extractive compression")
-st.info(
-    "This app reuses the notebook's exact scoring model and workflow. "
-    "The notebook does not define a 40% cleaning threshold; its demonstrated retention ratio is 50%, "
-    "which is the default below."
-)
-
-with st.sidebar:
-    st.subheader("Notebook configuration")
-    st.code(
-        f"model = {SCORING_MODEL_ID}\n"
-        f"word_combine = {WORD_COMBINE!r}\n"
-        f"max_content_tokens_per_chunk = {MAX_CONTENT_TOKENS_PER_CHUNK}\n"
-        "token_count = scoring tokenizer, add_special_tokens=False"
-    )
-    keep_percent = st.slider("Word retention ratio", min_value=1, max_value=100, value=50, step=1)
-    st.caption("Compression keeps the highest-scoring words and preserves original whitespace.")
+st.caption("Extractive prompt compression")
+st.caption("The cleaner keeps the highest-scoring 40% of words and preserves the original whitespace.")
 
 prompt = st.text_area(
     "Original prompt",
@@ -131,7 +115,7 @@ if st.button("Clean Prompt", type="primary", use_container_width=True):
             with st.spinner("Loading the LLMLingua-2 model and scoring the prompt..."):
                 bundle = get_model()
                 result = score_prompt(prompt, bundle)
-                cleaned = compress_prompt(prompt, result, keep_percent / 100)
+                cleaned = compress_prompt(prompt, result, KEEP_RATIO)
                 original_tokens = token_count(bundle, prompt)
                 cleaned_tokens = token_count(bundle, cleaned)
         except Exception:
