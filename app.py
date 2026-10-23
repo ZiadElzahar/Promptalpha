@@ -7,6 +7,7 @@ from email.message import EmailMessage
 import streamlit as st
 
 from prompt_scoring import (
+    MIN_OUTPUT_TOKENS,
     compress_prompt,
     load_model,
     score_prompt,
@@ -72,7 +73,7 @@ def send_report(subject: str, description: str) -> None:
 
 st.title("Promptalpha")
 st.caption("Extractive prompt compression")
-st.caption("The cleaner keeps the highest-scoring 25% of words and preserves the original whitespace.")
+st.caption(f"The cleaner keeps the highest-scoring 25% of words, with a minimum of {MIN_OUTPUT_TOKENS} output tokens when possible.")
 
 prompt = st.text_area(
     "Original prompt",
@@ -115,7 +116,13 @@ if st.button("Clean Prompt", type="primary", use_container_width=True):
             with st.spinner(""):
                 bundle = get_model()
                 result = score_prompt(prompt, bundle)
-                cleaned = compress_prompt(prompt, result, KEEP_RATIO)
+                cleaned = compress_prompt(
+                    prompt,
+                    result,
+                    KEEP_RATIO,
+                    tokenizer=bundle.tokenizer,
+                    minimum_tokens=MIN_OUTPUT_TOKENS,
+                )
                 original_tokens = token_count(bundle, prompt)
                 cleaned_tokens = token_count(bundle, cleaned)
         except Exception:

@@ -13,8 +13,9 @@ This application adapts the uploaded notebook's scoring and compression implemen
 - Token counts: the same scoring tokenizer with `add_special_tokens=False`
 - Compression: top-scoring words are retained; original whitespace is preserved and dropped word characters are removed
 - Retention ratio used by the app: fixed at `25%`
+- Minimum output-token safeguard: `32` tokens when the prompt contains enough words
 
-The user interface uses a fixed 25% retention ratio as requested. The internal scoring implementation remains unchanged.
+The user interface uses a fixed 25% retention ratio as requested. To avoid making short prompts unusably small, the app adds the next highest-scoring words until the compressed result reaches 32 tokenizer tokens when possible. If the original prompt is shorter than that, it keeps as much as the available words allow. The scoring model itself remains unchanged.
 
 ## Installation
 

@@ -13,6 +13,7 @@ SCORING_MODEL_ID = "microsoft/llmlingua-2-bert-base-multilingual-cased-meetingba
 MAX_CONTENT_TOKENS_PER_CHUNK = 510
 CHUNK_END_TOKENS = (".", "\n", ";")
 WORD_COMBINE = "max"
+MIN_OUTPUT_TOKENS = 32
 WORD_RE = re.compile(r"\w+|[^\w\s]+")
 
 
@@ -164,20 +165,21 @@ def score_prompt(text: str, bundle: ModelBundle) -> dict:
     return {"words": words, "scores": scores, "status": status, "truncated": truncated, "n_chunks": len(ranges), "n_model_tokens": n_model_tokens}
 
 
-def select_kept_indices(entries, keep_ratio: float):
+def select_kept_indices(entries, keep_ratio: float, minimum_tokens: int = 0, text: str = "", tokenizer=None):
     k = max(1, math.ceil(len(entries) * keep_ratio))
     ranked = sorted(entries, key=lambda entry: (-float(entry["importance_score"]), entry["word_index"]))
-    return {entry["word_index"] for entry in ranked[:k]}
+    selected = ranked[:k]
+    if minimum_tokens > 0 and tokenizer is not None and text:
+        while len(selected) < len(ranked):
+            candidate_text = _render_selected_words(text, selected)
+            if _count_tokens(tokenizer, candidate_text) >= minimum_tokens:
+                break
+            selected.append(ranked[len(selected)])
+    return {entry["word_index"] for entry in selected}
 
 
-def compress_prompt(text: str, result: dict, keep_ratio: float) -> str:
-    """Keep selected original word characters and all original whitespace."""
-    entries = [
-        {"word_index": i, "word": word, "start_char": start, "end_char": end, "importance_score": score}
-        for i, ((word, start, end), score) in enumerate(zip(result["words"], result["scores"]))
-    ]
-    kept = select_kept_indices(entries, keep_ratio)
-    spans = sorted((entry["start_char"], entry["end_char"]) for entry in entries if entry["word_index"] in kept)
+def _render_selected_words(text: str, entries) -> str:
+    spans = sorted((entry["start_char"], entry["end_char"]) for entry in entries)
     output, previous = [], 0
     for start, end in spans:
         output.append("".join(char for char in text[previous:start] if char.isspace()))
@@ -185,6 +187,16 @@ def compress_prompt(text: str, result: dict, keep_ratio: float) -> str:
         previous = end
     output.append("".join(char for char in text[previous:] if char.isspace()))
     return "".join(output)
+
+
+def compress_prompt(text: str, result: dict, keep_ratio: float, tokenizer=None, minimum_tokens: int = 0) -> str:
+    """Keep selected original word characters and all original whitespace."""
+    entries = [
+        {"word_index": i, "word": word, "start_char": start, "end_char": end, "importance_score": score}
+        for i, ((word, start, end), score) in enumerate(zip(result["words"], result["scores"]))
+    ]
+    kept = select_kept_indices(entries, keep_ratio, minimum_tokens, text, tokenizer)
+    return _render_selected_words(text, [entry for entry in entries if entry["word_index"] in kept])
 
 
 def token_count(bundle: ModelBundle, text: str) -> int:
