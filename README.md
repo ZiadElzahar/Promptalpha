@@ -37,22 +37,7 @@ From this directory:
 streamlit run app.py
 ```
 
-Paste a prompt, choose the word retention ratio if desired, and click **Clean Prompt**. The app displays the original prompt, cleaned prompt, original and cleaned token counts, tokens removed, reduction percentage, and model scoring status.
-
-## Report email configuration
-
-The red **Report a Problem** button opens a form with a subject selector and description field. To send reports from the website/alternate mailbox to your main mailbox, configure SMTP environment variables before starting Streamlit:
-
-```bash
-export REPORT_SMTP_HOST="smtp.example.com"
-export REPORT_SMTP_PORT="587"
-export REPORT_SMTP_USER="your-alternate-account@example.com"
-export REPORT_SMTP_PASSWORD="your-smtp-app-password"
-export REPORT_TO_EMAIL="your-main-account@example.com"
-streamlit run app.py
-```
-
-Use an app password or SMTP-specific credential where the mail provider supports it. Do not put the password in `app.py`, commit it to Git, or expose it in the browser. For Gmail, `REPORT_SMTP_HOST` is usually `smtp.gmail.com`, port `587`, and the sending account must have SMTP/app-password access enabled. The app sends the selected subject and description only; it does not automatically attach the user's prompt.
+Paste a prompt, then use **Show Scores** to inspect the importance score, word text, and character span for every detected word. Use **Clean Prompt** to generate the compressed prompt and its token statistics.
 
 ## Validation performed
 

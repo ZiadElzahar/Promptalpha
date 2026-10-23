@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-import os
-import smtplib
-from email.message import EmailMessage
-
 import streamlit as st
 
 from prompt_scoring import (
@@ -17,60 +13,10 @@ from prompt_scoring import (
 KEEP_RATIO = 0.25
 
 st.set_page_config(page_title="Promptalpha", page_icon=None, layout="wide")
-st.markdown(
-    """
-    <style>
-    div.stButton > button[kind="secondary"] {
-        background-color: #d32f2f;
-        color: white;
-        border: 1px solid #b71c1c;
-    }
-    div.stButton > button[kind="secondary"]:hover {
-        background-color: #b71c1c;
-        color: white;
-        border-color: #8e0000;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 
 @st.cache_resource(show_spinner=False)
 def get_model():
     return load_model()
-
-
-def send_report(subject: str, description: str) -> None:
-    """Send a report from the configured alternate mailbox to the main mailbox."""
-    def setting(name: str, default: str = "") -> str:
-        value = os.environ.get(name)
-        if value:
-            return value
-        try:
-            return str(st.secrets.get(name, default))
-        except Exception:
-            return default
-
-    smtp_host = setting("REPORT_SMTP_HOST")
-    smtp_port = int(setting("REPORT_SMTP_PORT", "587"))
-    smtp_user = setting("REPORT_SMTP_USER")
-    smtp_password = setting("REPORT_SMTP_PASSWORD")
-    report_to = setting("REPORT_TO_EMAIL")
-    if not all((smtp_host, smtp_user, smtp_password, report_to)):
-        raise RuntimeError("Report email is not configured.")
-
-    message = EmailMessage()
-    message["Subject"] = f"Prompt Cleaner report: {subject}"
-    message["From"] = smtp_user
-    message["To"] = report_to
-    message.set_content(description)
-    with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as smtp:
-        smtp.starttls()
-        smtp.login(smtp_user, smtp_password)
-        smtp.send_message(message)
-
-
 st.title("Promptalpha")
 
 prompt = st.text_area(
@@ -79,32 +25,32 @@ prompt = st.text_area(
     placeholder="Paste the prompt you want to clean...",
 )
 
-st.divider()
-st.subheader("Report a problem")
-st.caption("Send a report to the configured main account. The prompt is not included unless you add it yourself.")
-if "show_report_form" not in st.session_state:
-    st.session_state["show_report_form"] = False
-if st.button("Report a Problem", type="secondary"):
-    st.session_state["show_report_form"] = not st.session_state["show_report_form"]
-
-if st.session_state["show_report_form"]:
-    with st.form("report_form", clear_on_submit=True):
-        report_subject = st.selectbox(
-            "Subject",
-            ["Too short prompt", "Cleaning result is incorrect", "Model or loading error", "Other"],
-        )
-        report_description = st.text_area("Description", height=140, placeholder="Describe what happened...")
-        report_submitted = st.form_submit_button("Send Report", type="primary")
-    if report_submitted:
-        if not report_description.strip():
-            st.warning("Add a description before sending the report.")
+if st.button("Show Scores", type="secondary"):
+    if not prompt or not prompt.strip():
+        st.warning("Enter a non-empty prompt first.")
+    else:
+        try:
+            with st.spinner(""):
+                score_bundle = get_model()
+                score_result = score_prompt(prompt, score_bundle)
+        except Exception:
+            st.error("The scores could not be calculated. Verify that the model can be loaded and try again.")
         else:
-            try:
-                send_report(report_subject, report_description.strip())
-            except Exception:
-                st.error("The report could not be sent. The app email settings may not be configured correctly.")
-            else:
-                st.success("Your report was sent.")
+            st.session_state["score_result"] = score_result
+
+if "score_result" in st.session_state:
+    score_result = st.session_state["score_result"]
+    st.subheader("Word Scores")
+    score_rows = [
+        {
+            "Word": word,
+            "Importance score": round(float(score), 4),
+            "Start": start,
+            "End": end,
+        }
+        for (word, start, end), score in zip(score_result["words"], score_result["scores"])
+    ]
+    st.dataframe(score_rows, use_container_width=True, hide_index=True)
 
 if st.button("Clean Prompt", type="primary", use_container_width=True):
     if not prompt or not prompt.strip():
