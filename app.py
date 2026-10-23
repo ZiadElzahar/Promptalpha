@@ -72,8 +72,6 @@ def send_report(subject: str, description: str) -> None:
 
 
 st.title("Promptalpha")
-st.caption("Extractive prompt compression")
-st.caption(f"The cleaner keeps the highest-scoring 25% of words, with a minimum of {MIN_OUTPUT_TOKENS} output tokens when possible.")
 
 prompt = st.text_area(
     "Original prompt",
