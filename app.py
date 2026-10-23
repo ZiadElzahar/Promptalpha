@@ -112,7 +112,7 @@ if st.button("Clean Prompt", type="primary", use_container_width=True):
         st.warning("Enter a non-empty prompt before cleaning.")
     else:
         try:
-            with st.spinner("Loading the LLMLingua-2 model and scoring the prompt..."):
+            with st.spinner(""):
                 bundle = get_model()
                 result = score_prompt(prompt, bundle)
                 cleaned = compress_prompt(prompt, result, KEEP_RATIO)
