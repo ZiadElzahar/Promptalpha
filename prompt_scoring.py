@@ -186,7 +186,13 @@ def _render_selected_words(text: str, entries) -> str:
         output.append(text[start:end])
         previous = end
     output.append("".join(char for char in text[previous:] if char.isspace()))
-    return "".join(output)
+    rendered = "".join(output)
+    # The original notebook intentionally preserved every whitespace character.
+    # Promptalpha formats the extracted result for readability instead: horizontal
+    # whitespace is collapsed, while line breaks remain meaningful.
+    rendered = re.sub(r"[ \t\f\v]+", " ", rendered)
+    rendered = re.sub(r"[ \t]*\n[ \t]*", "\n", rendered)
+    return rendered.strip()
 
 
 def compress_prompt(text: str, result: dict, keep_ratio: float, tokenizer=None, minimum_tokens: int = 0) -> str:

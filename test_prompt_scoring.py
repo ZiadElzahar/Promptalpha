@@ -10,4 +10,4 @@ def test_split_words_roundtrip():
 
 def test_compress_preserves_whitespace():
     result = {"words": split_words("foo bar baz"), "scores": [0.9, 0.1, 0.5]}
-    assert compress_prompt("foo bar baz", result, 2 / 3) == "foo  baz"
+    assert compress_prompt("foo bar baz", result, 2 / 3) == "foo baz"
