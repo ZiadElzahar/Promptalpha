@@ -10,7 +10,7 @@ from prompt_scoring import (
     token_count,
 )
 
-KEEP_RATIO = 0.25
+SCORE_THRESHOLD = 0.25
 
 st.set_page_config(page_title="Promptalpha", page_icon=None, layout="wide")
 
@@ -63,7 +63,7 @@ if st.button("Clean Prompt", type="primary", use_container_width=True):
                 cleaned = compress_prompt(
                     prompt,
                     result,
-                    KEEP_RATIO,
+                    SCORE_THRESHOLD,
                     tokenizer=bundle.tokenizer,
                     minimum_tokens=MIN_OUTPUT_TOKENS,
                 )

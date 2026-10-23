@@ -11,11 +11,11 @@ This application adapts the uploaded notebook's scoring and compression implemen
 - Chunk boundaries: `.`, newline, and `;`, with notebook-style boundary backoff
 - Keep score: `softmax(logits)[:, KEEP_LABEL_ID]`, with the notebook's keep-label resolution
 - Token counts: the same scoring tokenizer with `add_special_tokens=False`
-- Compression: top-scoring words are retained; original whitespace is preserved and dropped word characters are removed
-- Retention ratio used by the app: fixed at `25%`
+- Compression: every word with importance score `>= 0.25` is retained; original whitespace is formatted after extraction
+- Score threshold used by the app: fixed at `0.25`
 - Minimum output-token safeguard: `32` tokens when the prompt contains enough words
 
-The user interface uses a fixed 25% retention ratio as requested. To avoid making short prompts unusably small, the app adds the next highest-scoring words until the compressed result reaches 32 tokenizer tokens when possible. If the original prompt is shorter than that, it keeps as much as the available words allow. The scoring model itself remains unchanged.
+The application uses an absolute score threshold, not a retention percentage. A word scored `0.25` or higher must not be removed. To avoid making very short prompts unusably small, the app may add lower-scoring words until the compressed result reaches 32 tokenizer tokens when possible. The scoring model itself remains unchanged.
 
 ## Installation
 

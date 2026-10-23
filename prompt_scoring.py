@@ -167,10 +167,11 @@ def score_prompt(text: str, bundle: ModelBundle) -> dict:
     return {"words": words, "scores": scores, "status": status, "truncated": truncated, "n_chunks": len(ranges), "n_model_tokens": n_model_tokens}
 
 
-def select_kept_indices(entries, keep_ratio: float, minimum_tokens: int = 0, text: str = "", tokenizer=None):
-    k = max(1, math.ceil(len(entries) * keep_ratio))
+def select_kept_indices(entries, score_threshold: float, minimum_tokens: int = 0, text: str = "", tokenizer=None):
     ranked = sorted(entries, key=lambda entry: (-float(entry["importance_score"]), entry["word_index"]))
-    selected = ranked[:k]
+    selected = [entry for entry in ranked if float(entry["importance_score"]) >= score_threshold]
+    if not selected and ranked:
+        selected = ranked[:1]
     if minimum_tokens > 0 and tokenizer is not None and text:
         while len(selected) < len(ranked):
             candidate_text = _render_selected_words(text, selected)
@@ -197,13 +198,13 @@ def _render_selected_words(text: str, entries) -> str:
     return rendered.strip()
 
 
-def compress_prompt(text: str, result: dict, keep_ratio: float, tokenizer=None, minimum_tokens: int = 0) -> str:
-    """Keep selected original word characters and all original whitespace."""
+def compress_prompt(text: str, result: dict, score_threshold: float, tokenizer=None, minimum_tokens: int = 0) -> str:
+    """Keep every scored word at or above the absolute importance threshold."""
     entries = [
         {"word_index": i, "word": word, "start_char": start, "end_char": end, "importance_score": score}
         for i, ((word, start, end), score) in enumerate(zip(result["words"], result["scores"]))
     ]
-    kept = select_kept_indices(entries, keep_ratio, minimum_tokens, text, tokenizer)
+    kept = select_kept_indices(entries, score_threshold, minimum_tokens, text, tokenizer)
     return _render_selected_words(text, [entry for entry in entries if entry["word_index"] in kept])
 
 
