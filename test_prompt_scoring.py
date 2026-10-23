@@ -26,3 +26,13 @@ def test_negation_auxiliary_survives_with_not():
     cleaned = compress_prompt(text, result, 0.25)
     assert "Do not" in cleaned
     assert "should not" in cleaned
+
+
+def test_delimited_spans_are_protected():
+    text = 'Keep `x  =  1` and "exact  value" and \'literal  text\'.'
+    words = split_words(text)
+    result = {"words": words, "scores": [0.1] * len(words)}
+    cleaned = compress_prompt(text, result, 0.25)
+    assert "`x  =  1`" in cleaned
+    assert '"exact  value"' in cleaned
+    assert "'literal  text'" in cleaned

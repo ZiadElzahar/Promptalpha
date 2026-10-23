@@ -13,7 +13,7 @@ This application adapts the uploaded notebook's scoring and compression implemen
 - Token counts: the same scoring tokenizer with `add_special_tokens=False`
 - Compression: every word with importance score `>= 0.25` is retained; original whitespace is formatted after extraction
 - Score threshold used by the app: fixed at `0.25`
-- Protected terms: negation and hard-constraint words such as `not`, `never`, `only`, `must`, `except`, and `without` are retained regardless of score; auxiliary-negation pairs such as `Do not` and `should not` keep both words together
+- Protected spans: text inside backticks, double quotes, or single quotes is retained as one unit without changing its model score; auxiliary-negation pairs such as `Do not` and `should not` keep both words together
 
 The application uses an absolute score threshold, not a retention percentage. A word scored `0.25` or higher is retained, and no minimum output-token rule adds lower-scoring words. The scoring model itself remains unchanged.
 

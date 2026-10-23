@@ -13,9 +13,12 @@ SCORING_MODEL_ID = "microsoft/llmlingua-2-bert-base-multilingual-cased-meetingba
 MAX_CONTENT_TOKENS_PER_CHUNK = 510
 CHUNK_END_TOKENS = (".", "\n", ";")
 WORD_COMBINE = "max"
-# Keep inline-code spans intact. This prevents names such as
-# ``finnnaaal (1).ipynb`` or ``get_user(id=42)`` from being split during cleaning.
-WORD_RE = re.compile(r"`[^`\n]*`|\w+(?:['’]\w+)?|[^\w\s]+")
+# Keep language-agnostic code and quoted spans intact. Their scores remain
+# unchanged; protection is applied only at selection time.
+WORD_RE = re.compile(
+    r"```.*?```|`[^`\n]*`|\"(?:\\.|[^\"\\\n])*\"|'(?:\\.|[^'\\\n])*'|\w+(?:['’]\w+)?|[^\w\s]+",
+    re.DOTALL,
+)
 
 # These words carry negation, exclusivity, or hard requirements. They are
 # protected independently of the model score because deleting them can invert
@@ -31,6 +34,16 @@ NEGATION_AUXILIARIES = frozenset({
     "is", "are", "was", "were", "have", "has", "had",
 })
 NEGATION_WORDS = frozenset({"not", "never"})
+
+
+def is_delimited_protected_span(word: str) -> bool:
+    stripped = word.strip()
+    return (
+        (stripped.startswith("```") and stripped.endswith("```"))
+        or (stripped.startswith("`") and stripped.endswith("`") and len(stripped) >= 2)
+        or (stripped.startswith('"') and stripped.endswith('"') and len(stripped) >= 2)
+        or (stripped.startswith("'") and stripped.endswith("'") and len(stripped) >= 2)
+    )
 
 
 @dataclass
@@ -186,7 +199,8 @@ def select_kept_indices(entries, score_threshold: float):
     protected_indices = {
         entry["word_index"]
         for entry in entries
-        if entry["word"].strip("` ").lower() in PROTECTED_TERMS
+        if is_delimited_protected_span(entry["word"])
+        or entry["word"].strip("` \"'").lower() in PROTECTED_TERMS
     }
     # Protect both sides of explicit negation phrases: "Do not", "should not",
     # "does not", etc. Protecting only "not" would change the remaining phrase.
@@ -208,18 +222,17 @@ def select_kept_indices(entries, score_threshold: float):
 def _render_selected_words(text: str, entries) -> str:
     spans = sorted((entry["start_char"], entry["end_char"]) for entry in entries)
     output, previous = [], 0
+
+    def normalized_gap(gap: str) -> str:
+        gap = re.sub(r"[ \t\f\v]+", " ", gap)
+        return re.sub(r"[ \t]*\n[ \t]*", "\n", gap)
+
     for start, end in spans:
-        output.append("".join(char for char in text[previous:start] if char.isspace()))
+        output.append(normalized_gap("".join(char for char in text[previous:start] if char.isspace())))
         output.append(text[start:end])
         previous = end
-    output.append("".join(char for char in text[previous:] if char.isspace()))
-    rendered = "".join(output)
-    # The original notebook intentionally preserved every whitespace character.
-    # Promptalpha formats the extracted result for readability instead: horizontal
-    # whitespace is collapsed, while line breaks remain meaningful.
-    rendered = re.sub(r"[ \t\f\v]+", " ", rendered)
-    rendered = re.sub(r"[ \t]*\n[ \t]*", "\n", rendered)
-    return rendered.strip()
+    output.append(normalized_gap("".join(char for char in text[previous:] if char.isspace())))
+    return "".join(output).strip()
 
 
 def compress_prompt(text: str, result: dict, score_threshold: float) -> str:
